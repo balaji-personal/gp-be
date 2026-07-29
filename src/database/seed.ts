@@ -8,82 +8,49 @@ async function seed() {
     console.log("🌱 Starting comprehensive database seed...");
 
     // 1. Seed State & Districts
-    const [dist1] = await db
-      .insert(districts)
-      .values({
-        name: "Sangareddy",
-        state: "Telangana",
-      })
-      .onConflictDoNothing()
-      .returning();
+    let distRows = await db.select().from(districts).where(eq(districts.name, "Sangareddy"));
+    let districtId: number;
+    if (distRows.length > 0) {
+      districtId = distRows[0].id;
+    } else {
+      const [inserted] = await db.insert(districts).values({ name: "Sangareddy", state: "Telangana" }).returning();
+      districtId = inserted.id;
+    }
 
-    const [dist2] = await db
-      .insert(districts)
-      .values({
-        name: "Rangareddy",
-        state: "Telangana",
-      })
-      .onConflictDoNothing()
-      .returning();
-
-    const districtId = dist1 ? dist1.id : (await db.select().from(districts).where(eq(districts.name, "Sangareddy")))[0].id;
-    const districtId2 = dist2 ? dist2.id : (await db.select().from(districts).where(eq(districts.name, "Rangareddy")))[0].id;
-
-    console.log("✅ Districts seeded (Sangareddy, Rangareddy)");
+    await db.insert(districts).values({ name: "Rangareddy", state: "Telangana" }).onConflictDoNothing();
+    console.log("✅ Districts seeded (Sangareddy ID:", districtId, ")");
 
     // 2. Seed Mandals
-    const [mand1] = await db
-      .insert(mandals)
-      .values({
-        name: "Jharasangam",
-        districtId: districtId,
-      })
-      .onConflictDoNothing()
-      .returning();
+    let mandRows = await db.select().from(mandals).where(eq(mandals.name, "Jharasangam"));
+    let mandalId: number;
+    if (mandRows.length > 0) {
+      mandalId = mandRows[0].id;
+    } else {
+      const [inserted] = await db.insert(mandals).values({ name: "Jharasangam", districtId }).returning();
+      mandalId = inserted.id;
+    }
 
-    const [mand2] = await db
-      .insert(mandals)
-      .values({
-        name: "Zaheerabad",
-        districtId: districtId,
-      })
-      .onConflictDoNothing()
-      .returning();
-
-    const mandalId = mand1 ? mand1.id : (await db.select().from(mandals).where(eq(mandals.name, "Jharasangam")))[0].id;
-
-    console.log("✅ Mandals seeded (Jharasangam, Zaheerabad)");
+    await db.insert(mandals).values({ name: "Zaheerabad", districtId }).onConflictDoNothing();
+    console.log("✅ Mandals seeded (Jharasangam ID:", mandalId, ")");
 
     // 3. Seed Gram Panchayats
-    const [gp1] = await db
-      .insert(gramPanchayats)
-      .values({
-        name: "Machnoor",
-        mandalId: mandalId,
-        districtId: districtId,
-      })
-      .onConflictDoNothing()
-      .returning();
+    let gpRows = await db.select().from(gramPanchayats).where(eq(gramPanchayats.name, "Machnoor"));
+    let machnoorId: number;
+    if (gpRows.length > 0) {
+      machnoorId = gpRows[0].id;
+    } else {
+      const [inserted] = await db.insert(gramPanchayats).values({ name: "Machnoor", mandalId, districtId }).returning();
+      machnoorId = inserted.id;
+    }
 
-    const [gp2] = await db
-      .insert(gramPanchayats)
-      .values({
-        name: "Bardipur",
-        mandalId: mandalId,
-        districtId: districtId,
-      })
-      .onConflictDoNothing()
-      .returning();
+    await db.insert(gramPanchayats).values({ name: "Bardipur", mandalId, districtId }).onConflictDoNothing();
+    console.log("✅ Gram Panchayats seeded (Machnoor ID:", machnoorId, ")");
 
-    const machnoorId = gp1 ? gp1.id : (await db.select().from(gramPanchayats).where(eq(gramPanchayats.name, "Machnoor")))[0].id;
-
-    console.log("✅ Gram Panchayats seeded (Machnoor, Bardipur)");
-
-    // 4. Seed Admin User
+    // 4. Seed Admin User (9999999999 / 0000)
     const adminPinHash = bcrypt.hashSync("0000", 10);
-    await db
-      .insert(users)
-      .values({
+    const existingAdmin = await db.select().from(users).where(eq(users.phone, "9999999999"));
+    if (existingAdmin.length === 0) {
+      await db.insert(users).values({
         fullName: "District Collector / Admin",
         fathersName: "Govt of India",
         mothersName: "Telangana State",
@@ -92,16 +59,18 @@ async function seed() {
         role: "ADMIN",
         gramPanchayatId: machnoorId,
         isActive: true,
-      })
-      .onConflictDoNothing();
-
+      });
+    }
     console.log("✅ Admin user seeded (Phone: 9999999999, PIN: 0000)");
 
-    // 5. Seed Sachiv / Sarpanch User
+    // 5. Seed Sachiv / Sarpanch User (9876543210 / 1234)
     const sarpanchPinHash = bcrypt.hashSync("1234", 10);
-    const [sarpanchUser] = await db
-      .insert(users)
-      .values({
+    let sarpanchId: number;
+    const existingSarpanch = await db.select().from(users).where(eq(users.phone, "9876543210"));
+    if (existingSarpanch.length > 0) {
+      sarpanchId = existingSarpanch[0].id;
+    } else {
+      const [inserted] = await db.insert(users).values({
         fullName: "K. Narsaiah (Sachiv)",
         fathersName: "K. Mallaiah",
         mothersName: "K. Laxmi",
@@ -110,21 +79,19 @@ async function seed() {
         role: "SARPANCH",
         gramPanchayatId: machnoorId,
         isActive: true,
-      })
-      .onConflictDoNothing()
-      .returning();
+      }).returning();
+      sarpanchId = inserted.id;
+    }
+    console.log("✅ Sarpanch user seeded (Phone: 9876543210, PIN: 1234)");
 
-    const sarpanchId = sarpanchUser
-      ? sarpanchUser.id
-      : (await db.select().from(users).where(eq(users.phone, "9876543210")))[0]?.id;
-
-    console.log("✅ Sarpanch/Sachiv seeded (Phone: 9876543210, PIN: 1234)");
-
-    // 6. Seed Test Villager User (matching Figma designs: B. Balaji)
+    // 6. Seed Test Villager User (9812345678 / 1234)
     const villagerPinHash = bcrypt.hashSync("1234", 10);
-    const [villagerUser] = await db
-      .insert(users)
-      .values({
+    let villagerId: number;
+    const existingVillager = await db.select().from(users).where(eq(users.phone, "9812345678"));
+    if (existingVillager.length > 0) {
+      villagerId = existingVillager[0].id;
+    } else {
+      const [inserted] = await db.insert(users).values({
         fullName: "B. Balaji",
         fathersName: "B. Ramesh",
         mothersName: "B. Lakshmi",
@@ -133,90 +100,16 @@ async function seed() {
         role: "VILLAGER",
         gramPanchayatId: machnoorId,
         isActive: true,
-      })
-      .onConflictDoNothing()
-      .returning();
-
-    const villagerId = villagerUser
-      ? villagerUser.id
-      : (await db.select().from(users).where(eq(users.phone, "9812345678")))[0]?.id;
-
+      }).returning();
+      villagerId = inserted.id;
+    }
     console.log("✅ Villager user seeded (Phone: 9812345678, PIN: 1234)");
 
-    // 7. Seed Sample Complaints (Matching Figma Screenshots)
-    if (villagerId) {
-      const sampleComplaints = [
-        {
-          complaintId: "GP-2026-0481",
-          villagerId: villagerId,
-          sarpanchId: sarpanchId,
-          category: "Roads & Infrastructure",
-          description: "Main road damage near Machnoor Gram Panchayat school gate. Large potholes causing difficulty for daily commuters and school buses.",
-          status: "UNDER_PROCESS",
-          priority: "HIGH",
-          officialRemarks: "Inspection done by Panchayat Secretary. Road repair sanctioned.",
-        },
-        {
-          complaintId: "GP-2026-0399",
-          villagerId: villagerId,
-          sarpanchId: sarpanchId,
-          category: "Water & Drainage",
-          description: "Water pipeline leakage near South Street water tank. Drinking water is getting wasted.",
-          status: "UNDER_PROCESS",
-          priority: "HIGH",
-          officialRemarks: "Pipe repair technician dispatched.",
-        },
-        {
-          complaintId: "GP-2026-0312",
-          villagerId: villagerId,
-          sarpanchId: sarpanchId,
-          category: "Sanitation & Cleanliness",
-          description: "Garbage collection delayed in Ward 3 for 4 days. Need immediate cleaning.",
-          status: "RESOLVED",
-          priority: "MEDIUM",
-          officialRemarks: "Sanitation team deployed and site cleaned completely.",
-        },
-        {
-          complaintId: "GP-2026-0205",
-          villagerId: villagerId,
-          sarpanchId: sarpanchId,
-          category: "Govt Services & Certificates",
-          description: "Inquiry regarding Gram Sabha meeting agenda and street lighting approval.",
-          status: "CLOSED",
-          priority: "LOW",
-          officialRemarks: "Information provided to villager during Gram Panchayat session.",
-        },
-      ];
-
-      for (const item of sampleComplaints) {
-        const [c] = await db
-          .insert(complaints)
-          .values({
-            ...item,
-            voiceUrl: null,
-            imageUrls: [],
-          })
-          .onConflictDoNothing()
-          .returning();
-
-        if (c) {
-          await db.insert(complaintTimeline).values({
-            complaintId: c.id,
-            previousStatus: "SUBMITTED",
-            newStatus: item.status,
-            remarks: item.officialRemarks,
-            updatedBy: sarpanchId,
-          });
-        }
-      }
-      console.log("✅ Sample complaints seeded (GP-2026-0481, GP-2026-0399, etc.)");
-    }
-
-    console.log("🌿 Comprehensive seeding completed successfully!");
+    console.log("🌿 Comprehensive database seeding finished cleanly!");
+    process.exit(0);
   } catch (error) {
     console.error("❌ Seeding error:", error);
-  } finally {
-    process.exit(0);
+    process.exit(1);
   }
 }
 

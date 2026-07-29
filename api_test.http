@@ -1,0 +1,111 @@
+### Health check
+GET http://localhost:5000/
+
+### Register a new villager
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Test Villager",
+  "fathersName": "Test Father",
+  "mothersName": "Test Mother",
+  "phone": "9999999998",
+  "pin": "1234",
+  "districtId": 1,
+  "mandalId": 1,
+  "gramPanchayatId": 1
+}
+
+### Login
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "phone": "9999999998",
+  "pin": "1234"
+}
+
+### Get districts
+GET http://localhost:5000/api/locations/districts
+
+### Get mandals by district
+GET http://localhost:5000/api/locations/mandals?districtId=1
+
+### Get gram panchayats by mandal
+GET http://localhost:5000/api/locations/gram-panchayats?mandalId=1
+
+### Register complaint
+POST http://localhost:5000/api/complaints/register
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="category"
+
+WATER
+--boundary
+Content-Disposition: form-data; name="description"
+
+Water is not available for 2 days.
+--boundary
+Content-Disposition: form-data; name="images"; filename="img1.jpg"
+Content-Type: image/jpeg
+
+< ./sample-image.jpg
+--boundary--
+
+### Get my complaints
+GET http://localhost:5000/api/complaints/my-complaints
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Get complaint details
+GET http://localhost:5000/api/complaints/1
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### Add sarpanch (admin only)
+POST http://localhost:5000/api/admin/add-sarpanch
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "fullName": "Sarpanch One",
+  "phone": "7777777777",
+  "pin": "4321",
+  "gramPanchayatId": 1
+}
+
+### Change user status (admin only)
+PUT http://localhost:5000/api/admin/users/2/status
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "isActive": true
+}
+
+### Add villager as sarpanch
+POST http://localhost:5000/api/sarpanch/villagers
+Authorization: Bearer YOUR_SARPANCH_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "fullName": "Villager Two",
+  "fathersName": "Father Two",
+  "mothersName": "Mother Two",
+  "phone": "6666666666",
+  "pin": "9999"
+}
+
+### Get village complaints as sarpanch
+GET http://localhost:5000/api/sarpanch/complaints
+Authorization: Bearer YOUR_SARPANCH_TOKEN_HERE
+
+### Update complaint status as sarpanch
+PUT http://localhost:5000/api/sarpanch/complaints/1/status
+Authorization: Bearer YOUR_SARPANCH_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "newStatus": "UNDER_PROCESS",
+  "remarks": "We are reviewing the issue"
+}

@@ -71,6 +71,7 @@ export async function registerComplaint(req: AuthRequest, res: Response) {
 export async function getMyComplaints(req: AuthRequest, res: Response) {
   try {
     const user = req.user!;
+    res.set("Cache-Control", "no-store");
     const records = await db.select().from(complaints).where(eq(complaints.villagerId, user.id));
     return res.json({ success: true, data: records });
   } catch (error) {

@@ -1,111 +1,91 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import bcrypt from "bcryptjs";
 import { db } from "../config/database";
-import { districts, mandals, gramPanchayats, users, complaints, complaintTimeline } from "./schema";
-import { eq } from "drizzle-orm";
+import { complaintTimeline, complaints, districts, gramPanchayats, mandals, users } from "./schema";
+
+type MappingRow = {
+  district: string;
+  mandal: string;
+  gramPanchayat: string;
+};
+
+function readMappingCsv(): MappingRow[] {
+  const csvPath = process.env.SEED_CSV_PATH || "C:\\Users\\balaji marpally\\Downloads\\sangareddy_gp_mapping.csv";
+  const lines = readFileSync(resolve(csvPath), "utf8")
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const [header, ...dataLines] = lines;
+  if (header !== "District,Mandal,Gram Panchayat") {
+    throw new Error("CSV must have the header: District,Mandal,Gram Panchayat");
+  }
+
+  const rows = dataLines.map((line, index) => {
+    const [district, mandal, gramPanchayat, ...extraColumns] = line.split(",");
+    if (!district || !mandal || !gramPanchayat || extraColumns.length > 0) {
+      throw new Error(`Invalid CSV row ${index + 2}: ${line}`);
+    }
+    return { district, mandal, gramPanchayat };
+  });
+
+  if (rows.length === 0 || rows.some((row) => row.district !== "Sangareddy")) {
+    throw new Error("CSV must contain Sangareddy location data");
+  }
+
+  return rows;
+}
 
 async function seed() {
   try {
-    console.log("🌱 Starting comprehensive database seed...");
+    const rows = readMappingCsv();
+    console.log(`🌱 Resetting database and importing ${rows.length} Sangareddy mappings...`);
 
-    // 1. Seed State & Districts
-    let distRows = await db.select().from(districts).where(eq(districts.name, "Sangareddy"));
-    let districtId: number;
-    if (distRows.length > 0) {
-      districtId = distRows[0].id;
-    } else {
-      const [inserted] = await db.insert(districts).values({ name: "Sangareddy", state: "Telangana" }).returning();
-      districtId = inserted.id;
-    }
+    await db.transaction(async (tx) => {
+      await tx.delete(complaintTimeline);
+      await tx.delete(complaints);
+      await tx.delete(users);
+      await tx.delete(gramPanchayats);
+      await tx.delete(mandals);
+      await tx.delete(districts);
 
-    await db.insert(districts).values({ name: "Rangareddy", state: "Telangana" }).onConflictDoNothing();
-    console.log("✅ Districts seeded (Sangareddy ID:", districtId, ")");
+      const [district] = await tx
+        .insert(districts)
+        .values({ name: "Sangareddy", state: "Telangana" })
+        .returning({ id: districts.id });
 
-    // 2. Seed Mandals
-    let mandRows = await db.select().from(mandals).where(eq(mandals.name, "Jharasangam"));
-    let mandalId: number;
-    if (mandRows.length > 0) {
-      mandalId = mandRows[0].id;
-    } else {
-      const [inserted] = await db.insert(mandals).values({ name: "Jharasangam", districtId }).returning();
-      mandalId = inserted.id;
-    }
+      const mandalNames = [...new Set(rows.map((row) => row.mandal))];
+      const mandalRows = await tx
+        .insert(mandals)
+        .values(mandalNames.map((name) => ({ name, districtId: district.id })))
+        .returning({ id: mandals.id, name: mandals.name });
+      const mandalIds = new Map(mandalRows.map((row) => [row.name, row.id]));
 
-    await db.insert(mandals).values({ name: "Zaheerabad", districtId }).onConflictDoNothing();
-    console.log("✅ Mandals seeded (Jharasangam ID:", mandalId, ")");
+      await tx.insert(gramPanchayats).values(
+        rows.map((row) => ({
+          name: row.gramPanchayat,
+          mandalId: mandalIds.get(row.mandal)!,
+          districtId: district.id,
+        }))
+      );
 
-    // 3. Seed Gram Panchayats
-    let gpRows = await db.select().from(gramPanchayats).where(eq(gramPanchayats.name, "Machnoor"));
-    let machnoorId: number;
-    if (gpRows.length > 0) {
-      machnoorId = gpRows[0].id;
-    } else {
-      const [inserted] = await db.insert(gramPanchayats).values({ name: "Machnoor", mandalId, districtId }).returning();
-      machnoorId = inserted.id;
-    }
-
-    await db.insert(gramPanchayats).values({ name: "Bardipur", mandalId, districtId }).onConflictDoNothing();
-    console.log("✅ Gram Panchayats seeded (Machnoor ID:", machnoorId, ")");
-
-    // 4. Seed Admin User (9999999999 / 0000)
-    const adminPinHash = bcrypt.hashSync("0000", 10);
-    const existingAdmin = await db.select().from(users).where(eq(users.phone, "9999999999"));
-    if (existingAdmin.length === 0) {
-      await db.insert(users).values({
+      await tx.insert(users).values({
         fullName: "District Collector / Admin",
         fathersName: "Govt of India",
         mothersName: "Telangana State",
         phone: "9999999999",
-        pinHash: adminPinHash,
+        pinHash: bcrypt.hashSync("0000", 10),
         role: "ADMIN",
-        gramPanchayatId: machnoorId,
+        gramPanchayatId: null,
         isActive: true,
       });
-    }
+    });
+
+    console.log("✅ Imported Sangareddy district, 26 mandals, and 600 gram panchayats");
     console.log("✅ Admin user seeded (Phone: 9999999999, PIN: 0000)");
-
-    // 5. Seed Sachiv / Sarpanch User (9876543210 / 1234)
-    const sarpanchPinHash = bcrypt.hashSync("1234", 10);
-    let sarpanchId: number;
-    const existingSarpanch = await db.select().from(users).where(eq(users.phone, "9876543210"));
-    if (existingSarpanch.length > 0) {
-      sarpanchId = existingSarpanch[0].id;
-    } else {
-      const [inserted] = await db.insert(users).values({
-        fullName: "K. Narsaiah (Sachiv)",
-        fathersName: "K. Mallaiah",
-        mothersName: "K. Laxmi",
-        phone: "9876543210",
-        pinHash: sarpanchPinHash,
-        role: "SARPANCH",
-        gramPanchayatId: machnoorId,
-        isActive: true,
-      }).returning();
-      sarpanchId = inserted.id;
-    }
-    console.log("✅ Sarpanch user seeded (Phone: 9876543210, PIN: 1234)");
-
-    // 6. Seed Test Villager User (9812345678 / 1234)
-    const villagerPinHash = bcrypt.hashSync("1234", 10);
-    let villagerId: number;
-    const existingVillager = await db.select().from(users).where(eq(users.phone, "9812345678"));
-    if (existingVillager.length > 0) {
-      villagerId = existingVillager[0].id;
-    } else {
-      const [inserted] = await db.insert(users).values({
-        fullName: "B. Balaji",
-        fathersName: "B. Ramesh",
-        mothersName: "B. Lakshmi",
-        phone: "9812345678",
-        pinHash: villagerPinHash,
-        role: "VILLAGER",
-        gramPanchayatId: machnoorId,
-        isActive: true,
-      }).returning();
-      villagerId = inserted.id;
-    }
-    console.log("✅ Villager user seeded (Phone: 9812345678, PIN: 1234)");
-
-    console.log("🌿 Comprehensive database seeding finished cleanly!");
+    console.log("🌿 Database seeding finished cleanly. No sarpanch or villager accounts were seeded.");
     process.exit(0);
   } catch (error) {
     console.error("❌ Seeding error:", error);

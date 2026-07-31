@@ -120,48 +120,7 @@ export async function login(req: Request, res: Response) {
       return res.status(400).json({ success: false, error: "Phone and PIN are required" });
     }
 
-    let [user] = await db.select().from(users).where(eq(users.phone, body.phone));
-    
-    // Auto-create test user accounts if logging in with standard test credentials for the first time
-    if (!user) {
-      const gpId = await getOrCreateDefaultGPId();
-      const defaultPinHash = bcrypt.hashSync("1234", 10);
-
-      if (body.phone === "9812345678" && (body.pin === "1234" || body.pin.length === 4)) {
-        [user] = await db.insert(users).values({
-          fullName: "B. Balaji",
-          fathersName: "B. Ramesh",
-          mothersName: "B. Lakshmi",
-          phone: "9812345678",
-          pinHash: defaultPinHash,
-          role: "VILLAGER",
-          gramPanchayatId: gpId,
-          isActive: true,
-        }).returning();
-      } else if (body.phone === "9876543210" && (body.pin === "1234" || body.pin.length === 4)) {
-        [user] = await db.insert(users).values({
-          fullName: "K. Narsaiah (Sachiv)",
-          fathersName: "K. Mallaiah",
-          mothersName: "K. Laxmi",
-          phone: "9876543210",
-          pinHash: defaultPinHash,
-          role: "SARPANCH",
-          gramPanchayatId: gpId,
-          isActive: true,
-        }).returning();
-      } else if (body.phone === "9999999999" && (body.pin === "0000" || body.pin === "1234")) {
-        [user] = await db.insert(users).values({
-          fullName: "District Collector / Admin",
-          fathersName: "Govt of India",
-          mothersName: "Telangana State",
-          phone: "9999999999",
-          pinHash: bcrypt.hashSync("0000", 10),
-          role: "ADMIN",
-          gramPanchayatId: gpId,
-          isActive: true,
-        }).returning();
-      }
-    }
+    const [user] = await db.select().from(users).where(eq(users.phone, body.phone));
 
     if (!user) {
       return res.status(400).json({ success: false, error: "Invalid credentials. Mobile number not registered." });

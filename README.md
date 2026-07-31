@@ -75,3 +75,6 @@ The server will start at `http://localhost:5000`.
 - `POST /api/complaints/register`: Register complaint (voice audio + photos)
 - `GET /api/complaints/my-complaints`: View user's complaints
 - `PUT /api/sarpanch/complaints/:id/status`: Update status & dispatch SMS alert
+
+
+DATABASE_URL=postgresql://neondb_owner:npg_Qec1wsIFWa5Y@ep-quiet-salad-axjca9h2.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require

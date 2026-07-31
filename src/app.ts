@@ -1,16 +1,17 @@
 import express from "express";
 import cors from "cors";
-import { initializeDatabase } from "./config/database";
-import authRoutes from "./routes/auth";
-import complaintRoutes from "./routes/complaints";
-import adminRoutes from "./routes/admin";
-import userRoutes from "./routes/users";
-import locationRoutes from "./routes/locations";
-import sarpanchRoutes from "./routes/sarpanch";
-import { errorHandler } from "./middleware/errorHandler";
-import { env } from "./config/env";
+import { initializeDatabase } from "./config/database.js";
+import authRoutes from "./routes/auth.js";
+import complaintRoutes from "./routes/complaints.js";
+import adminRoutes from "./routes/admin.js";
+import userRoutes from "./routes/users.js";
+import locationRoutes from "./routes/locations.js";
+import sarpanchRoutes from "./routes/sarpanch.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { env } from "./config/env.js";
 
 const app = express();
+app.get("/", (_req, res) => res.json({ success: true, message: "Gram Panchayat API is running" }));
 
 app.use(cors());
 app.use(express.json());
@@ -32,4 +33,8 @@ async function startServer() {
   });
 }
 
-startServer();
+export default app;
+
+if (!process.env.VERCEL) {
+  startServer();
+}

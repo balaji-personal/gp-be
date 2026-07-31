@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import bcrypt from "bcryptjs";
-import { db } from "../config/database";
-import { complaintTimeline, complaints, districts, gramPanchayats, mandals, users } from "./schema";
+import { db } from "../config/database.js";
+import { complaintTimeline, complaints, districts, gramPanchayats, mandals, users } from "./schema.js";
 
 type MappingRow = {
   district: string;

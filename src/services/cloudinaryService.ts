@@ -1,4 +1,4 @@
-import cloudinary from "../config/cloudinary";
+import cloudinary from "../config/cloudinary.js";
 
 function toDataUri(buffer: Buffer) {
   return `data:image/jpeg;base64,${buffer.toString("base64")}`;

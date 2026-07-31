@@ -2,10 +2,10 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { eq, count, sql } from "drizzle-orm";
-import { db } from "../config/database";
-import { users, complaints, gramPanchayats, mandals, districts, complaintTimeline } from "../database/schema";
-import { UserRole } from "../types";
-import { env } from "../config/env";
+import { db } from "../config/database.js";
+import { users, complaints, gramPanchayats, mandals, districts, complaintTimeline } from "../database/schema.js";
+import { UserRole } from "../types/index.js";
+import { env } from "../config/env.js";
 
 export async function adminLogin(req: Request, res: Response) {
   try {

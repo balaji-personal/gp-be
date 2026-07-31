@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { eq } from "drizzle-orm";
-import { db } from "../config/database";
-import { districts, mandals, gramPanchayats } from "../database/schema";
+import { db } from "../config/database.js";
+import { districts, mandals, gramPanchayats } from "../database/schema.js";
 
 export async function getDistricts(_req: Request, res: Response) {
   try {

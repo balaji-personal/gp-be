@@ -2,10 +2,10 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { eq } from "drizzle-orm";
-import { db } from "../config/database";
-import { users, gramPanchayats, districts, mandals } from "../database/schema";
-import { env } from "../config/env";
-import { AuthResponse, JWTPayload, LoginRequest, RegisterRequest, UserRole } from "../types";
+import { db } from "../config/database.js";
+import { users, gramPanchayats, districts, mandals } from "../database/schema.js";
+import { env } from "../config/env.js";
+import { AuthResponse, JWTPayload, LoginRequest, RegisterRequest, UserRole } from "../types/index.js";
 
 function buildToken(payload: JWTPayload) {
   return jwt.sign(payload as object, String(env.JWT_SECRET || 'secret'), { expiresIn: '7d' });

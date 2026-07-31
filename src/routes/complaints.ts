@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
-import { authenticate } from "../middleware/auth";
-import { registerComplaint, getMyComplaints, getComplaintDetails } from "../controllers/complaintController";
+import { authenticate } from "../middleware/auth.js";
+import { registerComplaint, getMyComplaints, getComplaintDetails } from "../controllers/complaintController.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });

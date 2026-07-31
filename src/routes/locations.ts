@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getDistricts, getMandals, getGramPanchayats } from "../controllers/locationController";
+import { getDistricts, getMandals, getGramPanchayats } from "../controllers/locationController.js";
 
 const router = Router();
 

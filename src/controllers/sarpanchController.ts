@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-import { db } from "../config/database";
-import { complaintTimeline, complaints, users } from "../database/schema";
-import { AuthRequest } from "../middleware/auth";
-import { ComplaintStatus, UserRole } from "../types";
+import { db } from "../config/database.js";
+import { complaintTimeline, complaints, users } from "../database/schema.js";
+import { AuthRequest } from "../middleware/auth.js";
+import { ComplaintStatus, UserRole } from "../types/index.js";
 
 function isValidComplaintStatus(status: string): status is ComplaintStatus {
   return ["SUBMITTED", "UNDER_PROCESS", "RESOLVED", "CLOSED"].includes(status);

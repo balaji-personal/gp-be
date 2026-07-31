@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { eq } from "drizzle-orm";
-import { db } from "../config/database";
-import { complaints } from "../database/schema";
-import { AuthRequest } from "../middleware/auth";
-import { ComplaintCategory, ComplaintResponse, ComplaintStatus } from "../types";
-import { uploadMedia } from "../services/cloudinaryService";
+import { db } from "../config/database.js";
+import { complaints } from "../database/schema.js";
+import { AuthRequest } from "../middleware/auth.js";
+import { ComplaintCategory, ComplaintResponse, ComplaintStatus } from "../types/index.js";
+import { uploadMedia } from "../services/cloudinaryService.js";
 
 function generateComplaintId(userId: number) {
   return `CMP-${Date.now()}-${userId}`;

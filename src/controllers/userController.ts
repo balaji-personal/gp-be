@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { db } from "../config/database";
-import { users } from "../database/schema";
+import { db } from "../config/database.js";
+import { users } from "../database/schema.js";
 
 export async function getUsers(req: Request, res: Response) {
   try {

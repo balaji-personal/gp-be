@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticate, authorize } from "../middleware/auth";
+import { authenticate, authorize } from "../middleware/auth.js";
 import {
   adminLogin,
   addSarpanch,
@@ -9,7 +9,7 @@ import {
   getSachivs,
   getVillages,
   addVillage,
-} from "../controllers/adminController";
+} from "../controllers/adminController.js";
 
 const router = Router();
 

@@ -78,3 +78,7 @@ The server will start at `http://localhost:5000`.
 
 
 DATABASE_URL=postgresql://neondb_owner:npg_Qec1wsIFWa5Y@ep-quiet-salad-axjca9h2.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require
+
+CLOUDINARY_CLOUD_NAME=pngmil9w
+CLOUDINARY_API_KEY=376668953931231
+CLOUDINARY_API_SECRET=vcz9N7E6ZFhndVEcEMAgv3aqCMI

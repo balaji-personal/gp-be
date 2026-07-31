@@ -37,13 +37,25 @@ export interface AuthResponse {
   success: boolean;
   message: string;
   token?: string;
-  user?: {
-    id: number;
-    fullName: string;
-    phone: string;
-    role: UserRole;
-    gramPanchayatId: number | null;
-  };
+  user?: UserProfile;
+}
+
+export interface UserProfile {
+  id: number;
+  fullName: string;
+  fathersName: string;
+  mothersName: string;
+  phone: string;
+  role: UserRole;
+  isActive: boolean | null;
+  gramPanchayatId: number | null;
+  gramPanchayatName: string | null;
+  mandalId: number | null;
+  mandalName: string | null;
+  districtId: number | null;
+  districtName: string | null;
+  stateName: string | null;
+  createdAt: Date | null;
 }
 
 export interface ComplaintResponse {

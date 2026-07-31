@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { eq, count, sql } from "drizzle-orm";
 import { db } from "../config/database.js";
 import { users, complaints, gramPanchayats, mandals, districts, complaintTimeline } from "../database/schema.js";
-import { UserRole } from "../types/index.js";
+import { UserProfile, UserRole } from "../types/index.js";
 import { env } from "../config/env.js";
 
 export async function adminLogin(req: Request, res: Response) {
@@ -14,7 +14,30 @@ export async function adminLogin(req: Request, res: Response) {
       return res.status(400).json({ success: false, error: "Phone and PIN are required" });
     }
 
-    const [user] = await db.select().from(users).where(eq(users.phone, phone));
+    const [user] = await db
+      .select({
+        id: users.id,
+        fullName: users.fullName,
+        fathersName: users.fathersName,
+        mothersName: users.mothersName,
+        phone: users.phone,
+        pinHash: users.pinHash,
+        role: users.role,
+        isActive: users.isActive,
+        gramPanchayatId: users.gramPanchayatId,
+        createdAt: users.createdAt,
+        gramPanchayatName: gramPanchayats.name,
+        mandalId: mandals.id,
+        mandalName: mandals.name,
+        districtId: districts.id,
+        districtName: districts.name,
+        stateName: districts.state,
+      })
+      .from(users)
+      .leftJoin(gramPanchayats, eq(users.gramPanchayatId, gramPanchayats.id))
+      .leftJoin(mandals, eq(gramPanchayats.mandalId, mandals.id))
+      .leftJoin(districts, eq(gramPanchayats.districtId, districts.id))
+      .where(eq(users.phone, phone));
     if (!user || user.role !== "ADMIN") {
       return res.status(401).json({ success: false, error: "Invalid admin credentials" });
     }
@@ -30,15 +53,28 @@ export async function adminLogin(req: Request, res: Response) {
       { expiresIn: "365d" }
     );
 
+    const profile: UserProfile = {
+      id: user.id,
+      fullName: user.fullName,
+      fathersName: user.fathersName,
+      mothersName: user.mothersName,
+      phone: user.phone,
+      role: user.role as UserRole,
+      isActive: user.isActive,
+      gramPanchayatId: user.gramPanchayatId,
+      gramPanchayatName: user.gramPanchayatName,
+      mandalId: user.mandalId,
+      mandalName: user.mandalName,
+      districtId: user.districtId,
+      districtName: user.districtName,
+      stateName: user.stateName,
+      createdAt: user.createdAt,
+    };
+
     return res.json({
       success: true,
       token,
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        phone: user.phone,
-        role: user.role,
-      },
+      user: profile,
     });
   } catch (error) {
     console.error(error);

@@ -5,19 +5,43 @@ import { eq } from "drizzle-orm";
 import { db } from "../config/database.js";
 import { users, gramPanchayats, districts, mandals } from "../database/schema.js";
 import { env } from "../config/env.js";
-import { AuthResponse, JWTPayload, LoginRequest, RegisterRequest, UserRole } from "../types/index.js";
+import { AuthResponse, JWTPayload, LoginRequest, RegisterRequest, UserProfile, UserRole } from "../types/index.js";
 
 function buildToken(payload: JWTPayload) {
   return jwt.sign(payload as object, String(env.JWT_SECRET || 'secret'), { expiresIn: '7d' });
 }
 
-function mapUser(user: any) {
+async function mapUser(user: typeof users.$inferSelect): Promise<UserProfile> {
+  const [location] = await db
+    .select({
+      gramPanchayatName: gramPanchayats.name,
+      mandalId: mandals.id,
+      mandalName: mandals.name,
+      districtId: districts.id,
+      districtName: districts.name,
+      stateName: districts.state,
+    })
+    .from(gramPanchayats)
+    .leftJoin(mandals, eq(gramPanchayats.mandalId, mandals.id))
+    .leftJoin(districts, eq(gramPanchayats.districtId, districts.id))
+    .where(eq(gramPanchayats.id, user.gramPanchayatId!));
+
   return {
     id: user.id,
     fullName: user.fullName,
+    fathersName: user.fathersName,
+    mothersName: user.mothersName,
     phone: user.phone,
-    role: user.role,
+    role: user.role as UserRole,
+    isActive: user.isActive,
     gramPanchayatId: user.gramPanchayatId,
+    gramPanchayatName: location?.gramPanchayatName ?? null,
+    mandalId: location?.mandalId ?? null,
+    mandalName: location?.mandalName ?? null,
+    districtId: location?.districtId ?? null,
+    districtName: location?.districtName ?? null,
+    stateName: location?.stateName ?? null,
+    createdAt: user.createdAt,
   };
 }
 
@@ -103,7 +127,7 @@ export async function register(req: Request, res: Response) {
       success: true,
       message: "Registration successful",
       token,
-      user: mapUser(user),
+      user: await mapUser(user),
     };
 
     return res.status(201).json(response);
@@ -146,7 +170,7 @@ export async function login(req: Request, res: Response) {
       success: true,
       message: "Login successful",
       token,
-      user: mapUser(user),
+      user: await mapUser(user),
     };
 
     return res.json(response);
